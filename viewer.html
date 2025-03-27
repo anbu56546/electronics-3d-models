@@ -51,36 +51,38 @@
         <div id="datasheetContainer"></div>
     </div>
 
-    <script>
-        // Step 1: Get the model name from URL (e.g., ?model=resistor.glb)
-        const urlParams = new URLSearchParams(window.location.search);
-        const model = urlParams.get("model");
+<script>
+    // Step 1: Get the model name from URL (e.g., ?model=resistor.glb)
+    const urlParams = new URLSearchParams(window.location.search);
+    const model = urlParams.get("model");
 
-        if (model) {
-            document.getElementById("modelViewer").src = `models/${model}`;
+    if (model) {
+        document.getElementById("modelViewer").src = `models/${model}`;
 
-            // Step 2: Generate corresponding datasheet file name
-            const datasheetUrl = `datasheets/${model.replace('.glb', '.pdf')}`;
+        // Step 2: Generate corresponding datasheet file name
+        const datasheetUrl = `datasheets/${model.replace('.glb', '.pdf')}`;
 
-            // Step 3: Check if the datasheet exists
-            fetch(datasheetUrl, { method: 'HEAD' })
-                .then(response => {
-                    if (response.ok) {
-                        displayPDF(datasheetUrl);
-                    }
-                });
+        // Step 3: Check if the datasheet exists
+        fetch(datasheetUrl, { method: 'HEAD' })
+            .then(response => {
+                if (response.ok) {
+                    displayPDF(datasheetUrl);
+                }
+            });
 
-        } else {
-            document.getElementById("content").innerHTML = "<h2 class='message'>No model specified</h2>";
-        }
+    } else {
+        document.getElementById("content").innerHTML = "<h2 class='message'>No model specified</h2>";
+    }
 
-        // Step 4: Function to display the datasheet as HTML content using PDF.js
-        function displayPDF(url) {
-            const pdfContainer = document.getElementById("datasheetContainer");
-            pdfContainer.style.display = "block"; // Show the container
+    // Step 4: Function to display the entire PDF as HTML content using PDF.js
+    function displayPDF(url) {
+        const pdfContainer = document.getElementById("datasheetContainer");
+        pdfContainer.style.display = "block"; // Show the container
+        pdfContainer.innerHTML = ""; // Clear previous content
 
-            pdfjsLib.getDocument(url).promise.then(pdf => {
-                pdf.getPage(1).then(page => {
+        pdfjsLib.getDocument(url).promise.then(pdf => {
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                pdf.getPage(pageNum).then(page => {
                     const canvas = document.createElement("canvas");
                     const context = canvas.getContext("2d");
                     pdfContainer.appendChild(canvas);
@@ -92,8 +94,10 @@
                     const renderContext = { canvasContext: context, viewport: viewport };
                     page.render(renderContext);
                 });
-            });
-        }
-    </script>
+            }
+        });
+    }
+</script>
+
 </body>
 </html>
