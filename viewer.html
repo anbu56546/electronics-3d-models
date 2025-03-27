@@ -26,9 +26,9 @@
         }
         #datasheetContainer {
             width: 80vw;
-            height: 30vh;
+            max-height: 30vh;
             background: white;
-            overflow-y: auto;
+            overflow-y: auto;  /* Enable scrolling for large PDFs */
             padding: 10px;
             display: none;
         }
@@ -39,6 +39,7 @@
         }
         canvas {
             width: 100%;
+            margin-bottom: 10px; /* Space between PDF pages */
         }
     </style>
 </head>
@@ -74,28 +75,28 @@
         document.getElementById("content").innerHTML = "<h2 class='message'>No model specified</h2>";
     }
 
-    // Step 4: Function to display the entire PDF as HTML content using PDF.js
-    function displayPDF(url) {
+    // Step 4: Function to display the full PDF (all pages) using PDF.js
+    async function displayPDF(url) {
         const pdfContainer = document.getElementById("datasheetContainer");
         pdfContainer.style.display = "block"; // Show the container
         pdfContainer.innerHTML = ""; // Clear previous content
 
-        pdfjsLib.getDocument(url).promise.then(pdf => {
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                pdf.getPage(pageNum).then(page => {
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
-                    pdfContainer.appendChild(canvas);
+        const pdf = await pdfjsLib.getDocument(url).promise; // Load PDF
 
-                    const viewport = page.getViewport({ scale: 1.5 });
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum); // Load each page
 
-                    const renderContext = { canvasContext: context, viewport: viewport };
-                    page.render(renderContext);
-                });
-            }
-        });
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            pdfContainer.appendChild(canvas);
+
+            const viewport = page.getViewport({ scale: 1.5 });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            const renderContext = { canvasContext: context, viewport: viewport };
+            await page.render(renderContext).promise; // Ensure rendering completes
+        }
     }
 </script>
 
