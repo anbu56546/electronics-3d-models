@@ -3,7 +3,13 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>3D Model Viewer with Datasheet</title>
+
+    <!-- Model Viewer -->
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -18,47 +24,75 @@
             width: 80vw;
             height: 50vh;
         }
-        iframe {
+        #datasheetContainer {
             width: 80vw;
             height: 30vh;
-            border: none;
             background: white;
+            overflow-y: auto;
+            padding: 10px;
+            display: none;
         }
         .message {
             color: white;
             text-align: center;
             font-size: 1.2em;
         }
+        canvas {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
     <div id="content">
+        <!-- 3D Model Viewer -->
         <model-viewer id="modelViewer" ar ar-modes="webxr scene-viewer quick-look" camera-controls auto-rotate></model-viewer>
-        <iframe id="datasheetViewer" hidden></iframe>
+
+        <!-- Datasheet Container -->
+        <div id="datasheetContainer"></div>
     </div>
 
     <script>
-        // Get model name from URL (e.g., ?model=resistor.glb)
+        // Step 1: Get the model name from URL (e.g., ?model=resistor.glb)
         const urlParams = new URLSearchParams(window.location.search);
         const model = urlParams.get("model");
 
         if (model) {
             document.getElementById("modelViewer").src = `models/${model}`;
 
-            // Get the corresponding datasheet (same name, .pdf extension)
+            // Step 2: Generate corresponding datasheet file name
             const datasheetUrl = `datasheets/${model.replace('.glb', '.pdf')}`;
-            
-            // Check if the datasheet exists
+
+            // Step 3: Check if the datasheet exists
             fetch(datasheetUrl, { method: 'HEAD' })
                 .then(response => {
                     if (response.ok) {
-                        const datasheetViewer = document.getElementById("datasheetViewer");
-                        datasheetViewer.src = datasheetUrl;
-                        datasheetViewer.hidden = false;
+                        displayPDF(datasheetUrl);
                     }
                 });
+
         } else {
             document.getElementById("content").innerHTML = "<h2 class='message'>No model specified</h2>";
+        }
+
+        // Step 4: Function to display the datasheet as HTML content using PDF.js
+        function displayPDF(url) {
+            const pdfContainer = document.getElementById("datasheetContainer");
+            pdfContainer.style.display = "block"; // Show the container
+
+            pdfjsLib.getDocument(url).promise.then(pdf => {
+                pdf.getPage(1).then(page => {
+                    const canvas = document.createElement("canvas");
+                    const context = canvas.getContext("2d");
+                    pdfContainer.appendChild(canvas);
+
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    const renderContext = { canvasContext: context, viewport: viewport };
+                    page.render(renderContext);
+                });
+            });
         }
     </script>
 </body>
